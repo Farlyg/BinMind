@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BinMind — AI Reverse Engineering</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/atom-one-dark.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <script src="{{ url_for('static', filename='vendor/marked.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/highlight.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/mermaid.min.js') }}"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">B</div>
+      <div>
+        <div class="title"><b>BinMind</b></div>
+        <div class="sub">AI REVERSE ENGINEERING · GHIDRA</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="status-chip" id="chip-ghidra"><span class="dot"></span> Ghidra</div>
+    <div class="status-chip" id="chip-llm"><span class="dot"></span> LLM</div>
+    <button class="lang-btn" id="btn-lang" title="Language">RU</button>
+    <button class="icon-btn" id="btn-help" title="Guide">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+    </button>
+    <button class="icon-btn" id="btn-settings" title="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+    </button>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="card">
+        <h3 data-i18n="upload_title">Анализ бинарника</h3>
+        <div class="upload-actions">
+          <button class="btn ghost" id="btn-choose" data-i18n="choose_file">Выбрать файл</button>
+          <input type="file" id="file-input" hidden>
+          <div class="file-name" id="file-name"></div>
+          <button class="btn" id="btn-analyze" data-i18n="analyze" disabled>Анализировать</button>
+        </div>
+        <div class="upload-status" id="upload-status"></div>
+      </div>
+
+      <div class="card jobs-card">
+        <h3 data-i18n="jobs_title">Задачи анализа</h3>
+        <div class="jobs" id="jobs">
+          <div class="jobs-empty" data-i18n="jobs_empty">Пока нет задач</div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="chat">
+      <div class="welcome" id="welcome">
+        <div>
+          <div class="glow">🧠</div>
+          <h2 data-i18n="welcome_title">Добро пожаловать в BinMind</h2>
+          <p data-i18n="welcome_text">Загрузи бинарник слева — Ghidra проанализирует его, а AI-агент ответит на вопросы о коде, функциях, строках и логике.</p>
+          <div class="examples">
+            <span data-i18n="ex1">«Что делает эта программа?»</span>
+            <span data-i18n="ex2">«Найди подозрительные строки»</span>
+            <span data-i18n="ex3">«Построй граф вызовов main»</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="messages" id="messages" style="display:none"></div>
+
+      <div class="composer-wrap" id="composer-wrap" style="display:none">
+        <div class="composer" id="composer">
+          <div class="inner">
+            <textarea id="chat-input" rows="1" data-i18n-ph="composer_ph" placeholder="Спроси что-нибудь о бинарнике…" disabled></textarea>
+            <button class="send-btn" id="btn-send" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- settings modal -->
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <div class="inner">
+        <h2 data-i18n="settings_title">Настройки</h2>
+        <div class="desc" data-i18n="settings_desc">LLM и Ghidra. По умолчанию — локальная Ollama (бесплатно, без лимитов).</div>
+        <div class="field">
+          <label data-i18n="llm_url_label">LLM Base URL (OpenAI-совместимый)</label>
+          <input id="set-llm-url" placeholder="http://localhost:11434/v1">
+        </div>
+        <div class="field row">
+          <div style="flex:1">
+            <label data-i18n="model_label">Модель</label>
+            <input id="set-llm-model" placeholder="qwen2.5-coder:7b">
+          </div>
+          <div style="flex:1">
+            <label data-i18n="key_label">API Key</label>
+            <input id="set-llm-key" placeholder="ollama">
+          </div>
+        </div>
+        <div class="field row">
+          <div style="flex:2">
+            <label data-i18n="ghidra_label">Ghidra REST URL</label>
+            <input id="set-ghidra-url" placeholder="http://localhost:9090">
+          </div>
+          <div style="flex:1">
+            <label data-i18n="turns_label">Макс. шагов агента</label>
+            <input id="set-turns" placeholder="5">
+          </div>
+        </div>
+        <div class="test-result" id="test-result"></div>
+        <div class="actions">
+          <button class="btn ghost" id="btn-test" data-i18n="btn_test">Проверить связь</button>
+          <button class="btn ghost" id="btn-cancel" data-i18n="btn_cancel">Отмена</button>
+          <button class="btn" id="btn-save" data-i18n="btn_save">Сохранить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- guide modal -->
+  <div class="overlay" id="guide-overlay">
+    <div class="modal">
+      <div class="inner">
+        <h2 data-i18n="guide_title">Как подключить Ghidra и LLM</h2>
+        <div class="desc" data-i18n="guide_intro">BinMind сам по себе — это интерфейс. Чтобы он отвечал, нужны две вещи, запущенные на твоём компьютере:</div>
+
+        <div class="guide-step">
+          <div class="gs-title" data-i18n="guide_s1_t">1. Запусти Ghidra (Docker)</div>
+          <div class="gs-desc" data-i18n="guide_s1_d">Нужен установленный Docker. Выполни в терминале:</div>
+          <div class="code"><code>docker run --rm -p 9090:9090 -v binmind_data:/data/ghidra_projects biniamfd/ghidra-headless-rest:latest</code><button class="copy" data-i18n="copy">Копировать</button></div>
+        </div>
+
+        <div class="guide-step">
+          <div class="gs-title" data-i18n="guide_s2_t">2. Запусти LLM (Ollama — бесплатно)</div>
+          <div class="gs-desc" data-i18n="guide_s2_d">Установи Ollama с ollama.com, затем:</div>
+          <div class="code"><code>ollama serve
+ollama pull qwen2.5-coder:7b</code><button class="copy" data-i18n="copy">Копировать</button></div>
+          <div class="guide-note" data-i18n="guide_s2_alt">Или укажи облачный OpenAI-совместимый API в настройках (URL + ключ + модель).</div>
+        </div>
+
+        <div class="guide-step">
+          <div class="gs-title" data-i18n="guide_s3_t">3. Проверь подключение</div>
+          <div class="gs-desc" data-i18n="guide_s3_d">Открой ⚙ Настройки, проверь адреса, нажми «Проверить связь». Индикаторы Ghidra и LLM вверху загорятся зелёным.</div>
+        </div>
+
+        <div class="actions">
+          <button class="btn" id="btn-guide-close" data-i18n="guide_close">Понятно</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

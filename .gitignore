@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.Python
+
+# PyInstaller
+build/
+dist/
+*.manifest
+
+# IDE
+.idea/
+.vscode/
+
+# Local data / logs (live in the per-user dir, but ignore if generated here)
+*.log
+chats/
+settings.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Old ReverseAI demo videos (old UI) — record fresh BinMind demos instead
+demo/

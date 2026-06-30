@@ -1,0 +1,38 @@
+# BinMind backends — Ghidra + Ollama in one command:
+#   docker compose up -d
+# First time only, pull a model into the Ollama container:
+#   docker exec -it ollama ollama pull qwen2.5-coder:7b
+# Then in BinMind settings use:
+#   Ghidra REST URL = http://localhost:9090
+#   LLM Base URL    = http://localhost:11434/v1   (model: qwen2.5-coder:7b)
+services:
+  ghidra:
+    image: biniamfd/ghidra-headless-rest:latest
+    container_name: ghidra
+    ports:
+      - "9090:9090"
+    volumes:
+      - ghidra_data:/data/ghidra_projects
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    # For NVIDIA GPU acceleration, install the NVIDIA Container Toolkit and
+    # uncomment the block below:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+volumes:
+  ghidra_data:
+  ollama_data:
